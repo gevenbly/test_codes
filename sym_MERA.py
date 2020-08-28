@@ -39,12 +39,14 @@ q_chim = Z2Charge([0] * (chim // 2) + [1] * (chim // 2))
 q_chi = Z2Charge([0] * (chi // 2) + [1] * (chi // 2))
 
 # create 2 versions of each index (incoming/outgoing flows)
+# --- Martin: is there a way of avoiding defining both flows separately?
 ind_chib0 = Index(charges=q_chib, flow=True)
 ind_chib1 = Index(charges=q_chib, flow=False)
 ind_chim0 = Index(charges=q_chim, flow=True)
 ind_chim1 = Index(charges=q_chim, flow=False)
 ind_chi0 = Index(charges=q_chi, flow=True)
 ind_chi1 = Index(charges=q_chi, flow=False)
+# -----------------
 
 # define hamiltonian and do 2-to-1 blocking
 en_exact = (-2 / np.sin(np.pi / (2 * n_sites))) / n_sites
@@ -65,12 +67,16 @@ wIso = [0] * n_levels
 ham = [0] * (n_levels + 1)
 rho = [0] * (n_levels + 1)
 
+# --- Martin: is there a way of directly defining blocksparse `eye` matrices?
 eye_mat = np.eye(chib**2, chib**2).reshape(chib, chib, chib, chib)
 uDis[0] = BT.fromdense([ind_chib1, ind_chib1, ind_chib0, ind_chib0], eye_mat)
+# -----------------
 
+# --- Martin: is there a way of directly defining blocksparse isometries?
 w_temp = BT.randn([ind_chib1, ind_chib1, ind_chi0], dtype=np.float64)
 ut, st, vt = BLA.svd(w_temp.reshape([chib**2, chi]), full_matrices=False)
 wIso[0] = (ut @ vt).reshape([chib, chib, chi])
+# -----------------
 
 ham_temp = (ham_init - bias * np.eye(chib**3)).reshape([chib] * 6)
 ham[0] = BT.fromdense([ind_chib1] * 3 + [ind_chib0] * 3, ham_temp)
@@ -107,8 +113,10 @@ for p in range(n_iterations):
               binaryMERA(tensor_list, which_network=2, which_env=2))
       uSize = uEnv.shape
       uEnv = uEnv.reshape([uSize[0] * uSize[1], uSize[2] * uSize[3]])
+      # --- Martin: here would be a useful place for an `orthogonalize` function
       utemp, stemp, vtemph = BLA.svd(uEnv.conj(), full_matrices=False)
       uDis[z] = (-1 * utemp @ vtemph).reshape(uSize)
+      # -----------------
 
     # optimise isometries
     tensor_list = [uDis[z], wIso[z], ham[z], rho[z + 1]]
@@ -128,7 +136,7 @@ for p in range(n_iterations):
     ham[z + 1] = (binaryMERA(tensor_list, which_network=1, which_env=12) +
                   binaryMERA(tensor_list, which_network=2, which_env=12))
 
-  # diagonalize top level Hamiltonian
+  # diagonalize top level Hamiltonian, find GS within the charge=0 sector
   ham_top = (ham[n_levels] +
              ham[n_levels].transpose([1, 2, 0, 4, 5, 3]) +
              ham[n_levels].transpose([2, 0, 1, 5, 3, 4]))
