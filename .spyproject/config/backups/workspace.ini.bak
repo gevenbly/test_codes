@@ -6,5 +6,5 @@ save_non_project_files = False
 
 [main]
 version = 0.2.0
-recent_files = ['..\\..\\..\\.spyder-py3\\temp.py', 'binaryMERA.py', 'sym_MERA.py', 'eigh.py', 'examples_eigh.py', 'script_binaryMERA.py']
+recent_files = ['sym_MERA.py', 'eigh.py', 'examples_eigh.py', 'script_binaryMERA.py', 'script_linkMERA.py', 'link_networks.py', 'helper_functs.py', '..\\..\\..\\AppData\\Local\\Continuum\\anaconda3\\lib\\site-packages\\tensornetwork\\ncon_interface.py']
 
