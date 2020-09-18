@@ -14,16 +14,16 @@ from link_networks import (LiftHam, LowerDensity, RightLink, LeftLink,
 import tensornetwork as tn
 
 # set simulation parameters
-chi = 6
+chi = 4
 chi_p = 4
 chi_m = 12
 n_levels = 3
 n_iterations = 1000
 n_sites = 3 * (2**(n_levels + 1))
 
-left_on = 1
+left_on = 0
 right_on = 1
-center_on = 1
+center_on = 0
 initialize_on = 1
 
 # define hamiltonian and do 2-to-1 blocking
@@ -47,7 +47,7 @@ if initialize_on:
     u[k + 1] = (np.eye(chi**2, chi_p**2)).reshape(chi, chi, chi_p, chi_p)
     w[k + 1] = orthog(np.random.rand(chi_p, chi_p, chi), pivot=2)
 
-  v = np.random.rand(chi, chi, chi)
+  v = np.random.rand(chi, chi, chi, 1)
   v = v / LA.norm(v)
 
 else:
@@ -72,7 +72,7 @@ ham_top = (ham[n_levels] +
            ).reshape(chi**3, chi**3)
 dtemp, vtemp = eigsh(0.5 * (ham_top + np.conj(ham_top.T)), k=1, which='SA')
 vtemp = vtemp / LA.norm(vtemp)
-v = vtemp.reshape(chi, chi, chi)
+v = vtemp.reshape(chi, chi, chi, 1)
 
 # lower the density matrix
 rho = [0] * (n_levels + 1)
@@ -105,7 +105,12 @@ for p in range(n_iterations):
 
     if right_on:
       # RightLink
-      gam1, gam2 = RightLink(ham_temp, u[z], w[z], rho[z + 1], chi_m)
+      tensors = [w[z], rho[z + 1], w[z].conj()]
+      connects = [[4, -3, 1], [3, 2, -2, 3, 1, -4], [4, -1, 2]]
+      con_order = [3, 2, 4, 1]
+      rhotemp = tn.ncon(tensors, connects, con_order)
+      _, proj = trunct_eigh(rhotemp, chi_m)
+      gam1, gam2 = RightLink(ham_temp, u[z], w[z], rho[z + 1], proj, chi_m)
 
       if (u[z].shape[3] < u[z].shape[1]):
         y = np.eye(u[z].shape[1], u[z].shape[3])
@@ -165,21 +170,39 @@ for p in range(n_iterations):
     if center_on:
       # CenterLink
       if z < (n_levels - 1):
-        w[z], u[z + 1] = CenterLink(ham_temp, u[z], w[z], u[z + 1], w[z + 1],
-                                    rho[z + 2], chi, chi_m)
+        # find projection onto reduced subspace
+        tensors = [w[z + 1], w[z + 1], rho[z + 2], w[z + 1].conj(),
+                   w[z + 1].conj()]
+        connects = [[-4, 6, 2], [7, -3, 1], [3, 4, 5, 1, 2, 5], [-2, 6, 4],
+                    [7, -1, 3]]
+        cont_order = [5, 7, 6, 2, 4, 3, 1]
+        rhotemp = tn.ncon(tensors, connects, cont_order)
+        _, proj = trunct_eigh(rhotemp.conj(), chi)
+
+        # evaluate centered environments and update tensors
+        rhotemp, qenv = CenterLink(ham_temp, u[z], w[z], u[z + 1], w[z + 1],
+                                   rho[z + 2], proj.conj(), chi, chi_m)
+        _, w[z] = trunct_eigh(rhotemp.conj(), chi)
+        u[z + 1] = orthog(tn.ncon([qenv, w[z].conj(), w[z].conj()],
+                                  [[1, 2, 3, 4, -3, -4], [1, 2, -1],
+                                   [3, 4, -2]]), pivot=2)
       else:
-        w[z] = TopLink(ham_temp, u[z], w[z], v, chi)
+        phitemp = TopLink(ham_temp, u[z], w[z], v, chi)
+        phitemp = phitemp / LA.norm(phitemp)
+        rhotemp = tn.ncon([phitemp, phitemp], [[-1, -2, 1, 2, 3],
+                                               [-3, -4, 1, 2, 3]])
+        _, w[z] = trunct_eigh(rhotemp, chi)
 
     ham[z + 1] = 2 * LiftHam(ham[z], u[z], w[z])
 
-  # diagonalize top-level Hamiltonian
-  ham_top = (ham[n_levels] +
-             ham[n_levels].transpose(1, 2, 0, 4, 5, 3) +
-             ham[n_levels].transpose(2, 0, 1, 5, 3, 4)
-             ).reshape(chi**3, chi**3)
-  dtemp, vtemp = eigsh(0.5 * (ham_top + np.conj(ham_top.T)), k=1, which='SA')
-  vtemp = vtemp / LA.norm(vtemp)
-  v = vtemp.reshape(chi, chi, chi)
+  # # diagonalize top-level Hamiltonian
+  # ham_top = (ham[n_levels] +
+  #            ham[n_levels].transpose(1, 2, 0, 4, 5, 3) +
+  #            ham[n_levels].transpose(2, 0, 1, 5, 3, 4)
+  #            ).reshape(chi**3, chi**3)
+  # dtemp, vtemp = eigsh(0.5 * (ham_top + np.conj(ham_top.T)), k=1, which='SA')
+  # vtemp = vtemp / LA.norm(vtemp)
+  # v = vtemp.reshape(chi, chi, chi, 1)
 
   # lower the density matrix
   rho[n_levels] = (vtemp @ np.conj(vtemp.T)).reshape([chi] * 6)

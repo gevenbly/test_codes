@@ -1,7 +1,7 @@
 
 from numpy import linalg as LA
 import tensornetwork as tn
-from helper_functs import trunct_eigh, orthog
+from helper_functs import trunct_eigh, orthog, orthog_sym
 
 
 #######################################
@@ -42,14 +42,14 @@ def LowerDensity(u, w, rho1):
               tn.ncon(tensors,connects2,con_order2))
 
 #######################################
-def RightLink(ham, u, w, rho1, chi_m):
+def RightLink(ham, u, w, rho1, proj, chi_m):
 
-  # Network 1 - leading cost: (chi^4)*(chi_p^2) 
-  tensors = [w, rho1, w.conj()] 
-  connects = [[4,-3,1],[3,2,-2,3,1,-4],[4,-1,2]] 
-  con_order = [3,2,4,1] 
-  rhotemp = tn.ncon(tensors,connects,con_order) 
-  _, proj = trunct_eigh(rhotemp, chi_m)
+  # # Network 1 - leading cost: (chi^4)*(chi_p^2) 
+  # tensors = [w, rho1, w.conj()] 
+  # connects = [[4,-3,1],[3,2,-2,3,1,-4],[4,-1,2]] 
+  # con_order = [3,2,4,1] 
+  # rhotemp = tn.ncon(tensors,connects,con_order) 
+  # _, proj = trunct_eigh(rhotemp, chi_m)
 
   tensors = [ham,u,u.conj(),u.conj(),w,w,w.conj(),w.conj(),w.conj(),rho1,proj]
   
@@ -77,7 +77,7 @@ def RightLink(ham, u, w, rho1, chi_m):
   cont_order = [10,1,7,18,19,16,9,2,8,14,15,17,11,12,13,4,5,6,3]
   temp4 = tn.ncon(tensors,connects,cont_order)
   
-  gam1 = tn.ncon([temp1+temp2+temp3+temp4,proj],[[-1,-2,-3,1],[-4,-5,1]])
+  gam1 = tn.ncon([temp1+temp2+temp3+temp4,proj.conj()],[[-1,-2,-3,1],[-4,-5,1]])
   
   tensors = [ham,u,u,u.conj(),u.conj(),w,w,w.conj(),w.conj(),w.conj(),rho1]
 
@@ -98,14 +98,14 @@ def RightLink(ham, u, w, rho1, chi_m):
   return gam1, gam2
 
 #######################################
-def LeftLink(ham, u, w, rho1, chi_m):
+def LeftLink(ham, u, w, rho1, proj, chi_m):
 
-  # Network 1 - leading cost: (chi^5)*(chi_p^1) 
-  tensors = [w,w.conj(),rho1]
-  connects = [[-4,3,1],[-2,3,2],[-1,2,4,-3,1,4]]
-  con_order = [4,1,3,2]
-  rhotemp = tn.ncon(tensors,connects,con_order)
-  _, proj = trunct_eigh(rhotemp, chi_m)
+  # # Network 1 - leading cost: (chi^5)*(chi_p^1) 
+  # tensors = [w,w.conj(),rho1]
+  # connects = [[-4,3,1],[-2,3,2],[-1,2,4,-3,1,4]]
+  # con_order = [4,1,3,2]
+  # rhotemp = tn.ncon(tensors,connects,con_order)
+  # _, proj = trunct_eigh(rhotemp, chi_m)
   
   tensors = [ham,u,u.conj(),u.conj(),w,w,w.conj(),w.conj(),w.conj(),rho1,proj]
   
@@ -129,7 +129,7 @@ def LeftLink(ham, u, w, rho1, chi_m):
   cont_order = [17,2,10,11,18,19,1,8,9,3,4,15,16,13,14,5,6,7,12]
   temp4 = tn.ncon(tensors,connects,cont_order)
   
-  gam1 = tn.ncon([temp1+temp2+temp3+temp4,proj],[[-1,-2,-3,1],[-4,-5,1]])
+  gam1 = tn.ncon([temp1+temp2+temp3+temp4,proj.conj()],[[-1,-2,-3,1],[-4,-5,1]])
   
   tensors = [ham,u,u,u.conj(),u.conj(),w,w,w.conj(),w.conj(),w.conj(),rho1]
   
@@ -147,7 +147,7 @@ def LeftLink(ham, u, w, rho1, chi_m):
   
   return gam1, gam2
 
-def CenterLink(ham, u, w, u1, w1, rho2, chi, chi_m):
+def CenterLink(ham, u, w, u1, w1, rho2, proj, chi, chi_m):
 
   # (chi^4)*(chi_p^5)
   tensors = [ham,u,u,u.conj(),u.conj(),w.conj()] 
@@ -161,12 +161,12 @@ def CenterLink(ham, u, w, u1, w1, rho2, chi, chi_m):
   con_order = [4,5,1,2,8,6,7,3,9] 
   ham7 = temp1 + tn.ncon(tensors,connects,con_order) 
   
-  # (chi^4)*(chi_p^2) 
-  tensors = [w1,w1,rho2,w1.conj(),w1.conj()] 
-  connects = [[-4,6,2],[7,-3,1],[3,4,5,1,2,5],[-2,6,4],[7,-1,3]] 
-  cont_order = [5,7,6,2,4,3,1] 
-  rhotemp = tn.ncon(tensors,connects,cont_order) 
-  _, proj = trunct_eigh(rhotemp, chi_m)
+  # # (chi^4)*(chi_p^2) 
+  # tensors = [w1,w1,rho2,w1.conj(),w1.conj()] 
+  # connects = [[-4,6,2],[7,-3,1],[3,4,5,1,2,5],[-2,6,4],[7,-1,3]] 
+  # cont_order = [5,7,6,2,4,3,1] 
+  # rhotemp = tn.ncon(tensors,connects,cont_order) 
+  # _, proj = trunct_eigh(rhotemp, chi_m)
   
   # Network 1 - leading cost: (chi^2)*(chi_p^6)*(chi_c^1) 
   tensors = [w,w.conj(),w.conj(),u1,u1.conj(),u1.conj(),w1,w1,w1,w1.conj(),w1.conj(),w1.conj(),rho2,ham7,proj] 
@@ -192,7 +192,8 @@ def CenterLink(ham, u, w, u1, w1, rho2, chi, chi_m):
   cont_order = [8,18,7,11,14,5,23,9,12,10,24,2,3,25,4,13,1,17,16,6,19,21,22,15,20] 
   temp4 = tn.ncon(tensors,connects,cont_order)
   
-  q = orthog(tn.ncon([temp1+temp2+temp3+temp4,proj],[[-1,-2,-3,-4,1],[-5,-6,1]]),4)
+  q = orthog_sym(tn.ncon([temp1+temp2+temp3+temp4,proj.conj()],[[-1,-2,-3,-4,1],[-5,-6,1]]), pivot=4).conj()
+  # q = orthog(tn.ncon([temp1+temp2+temp3+temp4,proj.conj()],[[-1,-2,-3,-4,1],[-5,-6,1]]), pivot=4).conj()
   
   # Network 2 - leading cost: (chi_p^8) 
   tensors = [w1,w1,rho2,w1.conj(),w1.conj(),q,q.conj()] 
@@ -206,12 +207,13 @@ def CenterLink(ham, u, w, u1, w1, rho2, chi, chi_m):
   cont_order = [5,7,1,3,6,2,4,11,10,9,8,13,12] 
   temp2 = tn.ncon(tensors,connects,cont_order) 
   
-  rhotemp = 0.5*(temp1+temp2)
-  dtemp, w = trunct_eigh(rhotemp, chi)
+  return 0.5*(temp1+temp2), q
   
-  u1 = orthog(tn.ncon([q,w.conj(),w.conj()],[[1,2,3,4,-3,-4],[1,2,-1],[3,4,-2]]),2)
+  # dtemp, w = trunct_eigh(rhotemp, chi)
+  
+  # u1 = orthog(tn.ncon([q,w.conj(),w.conj()],[[1,2,3,4,-3,-4],[1,2,-1],[3,4,-2]]),2)
 
-  return w, u1
+  # return w, u1
 
 def TopLink(ham,u,w,v,chi):
 
@@ -227,26 +229,28 @@ def TopLink(ham,u,w,v,chi):
   con_order = [4,5,1,2,8,6,7,3,9] 
   ham7 = temp1 + tn.ncon(tensors,connects,con_order) 
   
-  tensors = [w,w,w.conj(),w.conj(),ham7,v] 
-  connects = [[3,4,-3],[5,1,-4],[-1,2,8],[6,1,9],[2,7,6,-2,3,4,5],[8,7,9]] 
+  tensors = [w,w,w.conj(),w.conj(),ham7,v.conj()] 
+  connects = [[3,4,-3],[5,1,-4],[-1,2,8],[6,1,9],[2,7,6,-2,3,4,5],[8,7,9,-5]] 
   cont_order = [3,4,9,8,1,2,7,6,5] 
   temp1 = tn.ncon(tensors,connects,cont_order) 
   
   # Network 2 - leading cost: (chi^1)*(chi_p^8) 
-  tensors = [w,w,w.conj(),w.conj(),ham7,v] 
-  connects = [[1,4,-4],[5,2,-3],[1,3,8],[6,2,9],[3,7,6,4,-1,-2,5],[8,7,9]] 
+  tensors = [w,w,w.conj(),w.conj(),ham7,v.conj()] 
+  connects = [[1,4,-4],[5,2,-3],[1,3,8],[6,2,9],[3,7,6,4,-1,-2,5],[8,7,9,-5]] 
   cont_order = [9,8,3,6,7,1,4,2,5] 
   temp2 = tn.ncon(tensors,connects,cont_order) 
   
   # Network 3 - leading cost: (chi^3)*(chi_p^5) 
-  tensors = [w,w,w.conj(),w.conj(),ham7,v] 
-  connects = [[4,5,-4],[1,3,-3],[1,2,8],[6,-2,9],[2,7,6,3,4,5,-1],[8,7,9]] 
+  tensors = [w,w,w.conj(),w.conj(),ham7,v.conj()] 
+  connects = [[4,5,-4],[1,3,-3],[1,2,8],[6,-2,9],[2,7,6,3,4,5,-1],[8,7,9,-5]] 
   cont_order = [9,8,1,4,5,2,7,6,3] 
   temp3 = tn.ncon(tensors,connects,cont_order)
   
-  phitemp = temp1+temp2+temp3
-  phitemp = phitemp / LA.norm(phitemp)
-  rhotemp = tn.ncon([phitemp,phitemp],[[-1,-2,1,2],[-3,-4,1,2]])
-  _, w = trunct_eigh(rhotemp, chi)
+  return temp1+temp2+temp3
   
-  return w
+  # phitemp = temp1+temp2+temp3
+  # phitemp = phitemp / LA.norm(phitemp)
+  # rhotemp = tn.ncon([phitemp,phitemp],[[-1,-2,1,2],[-3,-4,1,2]])
+  # _, w = trunct_eigh(rhotemp, chi)
+  
+  # return w

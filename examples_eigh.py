@@ -80,7 +80,7 @@ V = V.reshape([2**(n_sites // 2), 2**(n_sites // 2), 2])
 rho_half = tn.ncon([V, rho_temp, V.conj()], [[-1, 1, 2], [2, 3], [-2, 1, 3]])
 
 # decomp with evalues sorted by magnitude
-E2, V2 = eigh(rho_half, which='LM', threshold=1e-10)
+E2, V2 = eigh(rho_half, which='LM', full_sort=False, threshold=1e-10, max_kept=15)
 rho_recover = V2 @ BLA.diag(E2) @ V2.T.conj()
 assert np.allclose(rho_half.todense(), rho_recover.todense())
 
